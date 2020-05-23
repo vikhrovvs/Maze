@@ -64,8 +64,8 @@ def game_loop(screen: Surface, maze: Maze, finished: bool):
                                 maze.walkthrough[x][y] = VISITED
                             if maze.walkthrough[x][y] == FINISH:
                                 finished = True
+                                global start_time
                                 time = datetime.datetime.now() - start_time
-                                print(time)
 
                 if event.type == pygame.MOUSEBUTTONUP and event.button == 3:
                     x, y = [p // grid_size for p in event.pos]
@@ -78,13 +78,11 @@ def game_loop(screen: Surface, maze: Maze, finished: bool):
                         if neighbours == 1:
                             maze.walkthrough[x][y] = NOT_VISITED
 
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_r:
-                        maze.create_random_maze()
             #finished == false section end
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
                     finished = False
+                    start_time = datetime.datetime.now()
                     maze.create_random_maze()
 
         draw_maze(screen, 0, 0, grid_size, maze)
