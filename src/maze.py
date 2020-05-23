@@ -1,10 +1,7 @@
-from .dsu import DSU
 import random
-
-NOT_VISITED = 0
-VISITED = 1
-START = 2
-FINISH = -1
+from queue import Queue
+from .consts import *
+from .dsu import DSU
 
 class Maze:
     def __init__(self, size_x, size_y):
@@ -16,7 +13,8 @@ class Maze:
         self.walkthrough = [[NOT_VISITED] * size_y for i in range(size_x)]
         self.walkthrough[0][0] = START
         self.walkthrough[size_x - 1][size_y - 1] = FINISH
-
+        self.path = []
+        self.hints = 0
     # Порядок стен на примере лабиринта 3x2:
     #.|.|.
     #- - -
@@ -65,6 +63,8 @@ class Maze:
         self.walkthrough = [[NOT_VISITED] * self.size_y for i in range(self.size_x)]
         self.walkthrough[0][0] = START
         self.walkthrough[self.size_x - 1][self.size_y - 1] = FINISH
+        self.path = []
+        self.hints = 0
         wallsNumbers = list(range(self.walls_quantity))
         random.shuffle(wallsNumbers)
         for wall in wallsNumbers:
@@ -72,4 +72,34 @@ class Maze:
             if self.cells.FindSet(y1*self.size_x + x1) != self.cells.FindSet(y2*self.size_x + x2):
                 self.walls[wall] = False
                 self.cells.Unite(y1*self.size_x + x1, y2*self.size_x + x2)
+    def solve(self):
+        queue = Queue()
+        queue.put((0, 0))
+        predecessors = [[(-1, -1)] * self.size_y for i in range(self.size_x)]
+        visited = [[False] * self.size_y for i in range(self.size_x)]
+        visited[0][0] = True
+        while not queue.empty():
+            x, y = queue.get()
+            for i, j in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+                wall = self.get_wall_number(x, y, x + i, y + j)
+                if wall is not None and not self.walls[wall]:
+                    if not visited[x + i][y + j]:
+                        predecessors[x + i][y + j] = (x, y)
+                        visited[x + i][y + j] = True
+                        queue.put((x + i, y + j))
+        self.path = [(self.size_x - 1, self.size_y - 1)]
+        pred = predecessors[self.size_x - 1][self.size_y - 1] #FINISH
+        while pred != (-1, -1):
+            self.path.insert(0, (pred[0], pred[1]))
+            pred = predecessors[pred[0]][pred[1]]
 
+    def get_next_move(self):
+        if len(self.path) == 0:
+            self.solve()
+        for x, y in self.path:
+            if self.walkthrough[x][y] == NOT_VISITED:
+                self.hints += 1
+                self.walkthrough[x][y] = HINT
+                return
+            if self.walkthrough[x][y] == HINT:
+                return
