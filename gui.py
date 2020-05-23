@@ -6,20 +6,13 @@ from pygame import Surface
 import datetime
 
 from src.maze import Maze
+from src.consts import *
 
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-GRAY = (125, 125, 125)
-LIGHT_BLUE = (64, 128, 255)
-GREEN = (0, 200, 64)
-YELLOW = (255, 255, 0)
-PINK = (230, 50, 230)
-RED = (255, 0, 0)
-
-NOT_VISITED = 0
-VISITED = 1
-START = 2
-FINISH = -1
+def blit_text(screen: Surface, text: str):
+    font = pygame.font.Font(None, 100)
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        screen.blit(font.render(line, 1, YELLOW, LIGHT_BLUE), (120, 240 + 69*i))
 
 
 def draw_maze(screen: Surface, pos_x: int, pos_y: int, elem_size: int, maze: Maze):
@@ -32,6 +25,8 @@ def draw_maze(screen: Surface, pos_x: int, pos_y: int, elem_size: int, maze: Maz
             color = GREEN
         if maze.walkthrough[x][y] == VISITED:
             color = RED
+        if maze.walkthrough[x][y] == HINT:
+            color = LIGHT_BLUE
         pygame.draw.rect(screen, color, position)
         if maze.get_wall_number(x, y, x, y - 1) is None or maze.walls[maze.get_wall_number(x, y, x, y - 1)]:
             position_top = pos_x + x * elem_size, pos_y + y * elem_size, elem_size, elem_size / 10
@@ -60,7 +55,7 @@ def game_loop(screen: Surface, maze: Maze, finished: bool):
                     for i, j in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
                         wall = maze.get_wall_number(x, y, x + i, y + j)
                         if wall is not None and maze.walls[wall] == False and maze.walkthrough[x + i][y + j] > 0:
-                            if maze.walkthrough[x][y] == NOT_VISITED:
+                            if maze.walkthrough[x][y] in (NOT_VISITED, HINT):
                                 maze.walkthrough[x][y] = VISITED
                             if maze.walkthrough[x][y] == FINISH:
                                 finished = True
@@ -77,8 +72,11 @@ def game_loop(screen: Surface, maze: Maze, finished: bool):
                                 neighbours += 1
                         if neighbours == 1:
                             maze.walkthrough[x][y] = NOT_VISITED
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        maze.get_next_move()
 
-            #finished == false section end
+            ###finished == false section end
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
                     finished = False
@@ -87,9 +85,7 @@ def game_loop(screen: Surface, maze: Maze, finished: bool):
 
         draw_maze(screen, 0, 0, grid_size, maze)
         if finished:
-            font = pygame.font.Font(None, 100)
-            text = font.render(str(time), 1, YELLOW, LIGHT_BLUE)
-            screen.blit(text, (120, 360))
+            blit_text(screen, str(time) + '\nHints used: ' + str(maze.hints))
         pygame.display.flip()
 
 
@@ -103,6 +99,7 @@ screen: Surface = pygame.display.set_mode([720, 720])
 finished = False
 maze = Maze(8, 8)
 maze.create_random_maze()
+maze.solve()
 start_time = datetime.datetime.now()
 game_loop(screen, maze, finished)
 
