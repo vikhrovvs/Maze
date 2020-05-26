@@ -3,6 +3,7 @@ from queue import Queue
 from .consts import *
 from .dsu import DSU
 
+
 class Maze:
     def __init__(self, size_x, size_y):
         self.size_x = size_x
@@ -15,6 +16,7 @@ class Maze:
         self.walkthrough[size_x - 1][size_y - 1] = FINISH
         self.path = []
         self.hints = 0
+        self.turns = 2
     # Порядок стен на примере лабиринта 3x2:
     #.|.|.
     #- - -
@@ -65,13 +67,16 @@ class Maze:
         self.walkthrough[self.size_x - 1][self.size_y - 1] = FINISH
         self.path = []
         self.hints = 0
+        self.turns = 2
         wallsNumbers = list(range(self.walls_quantity))
         random.shuffle(wallsNumbers)
         for wall in wallsNumbers:
             x1, y1, x2, y2 = self.get_cell(wall)
-            if self.cells.FindSet(y1*self.size_x + x1) != self.cells.FindSet(y2*self.size_x + x2):
+            if self.cells.find_set(y1*self.size_x + x1) != self.cells.find_set(y2*self.size_x + x2):
                 self.walls[wall] = False
-                self.cells.Unite(y1*self.size_x + x1, y2*self.size_x + x2)
+                self.cells.unite(y1*self.size_x + x1, y2*self.size_x + x2)
+        self.solve()
+
     def solve(self):
         queue = Queue()
         queue.put((0, 0))
@@ -87,6 +92,7 @@ class Maze:
                         predecessors[x + i][y + j] = (x, y)
                         visited[x + i][y + j] = True
                         queue.put((x + i, y + j))
+
         self.path = [(self.size_x - 1, self.size_y - 1)]
         pred = predecessors[self.size_x - 1][self.size_y - 1] #FINISH
         while pred != (-1, -1):
@@ -94,8 +100,6 @@ class Maze:
             pred = predecessors[pred[0]][pred[1]]
 
     def get_next_move(self):
-        if len(self.path) == 0:
-            self.solve()
         for x, y in self.path:
             if self.walkthrough[x][y] == NOT_VISITED:
                 self.hints += 1
